@@ -15,36 +15,39 @@ export class VectorClock {
     }
   }
 
+  // Get component for a process (0 if process not seen yet)
   get(processId: ProcessId) {
     return this.clock.get(processId) ?? 0;
   }
 
+  // Increment own component — call on every local event
   tick(): VectorClock {
     this.clock.set(this.processId, this.get(this.processId) + 1);
     return this;
   }
 
+  // Create a copy to attach to outgoing messages
   snapshot() {
     return new Map(this.clock);
   }
 
+  // Get component for a process (0 if process not seen yet)
   send(): ReturnType<typeof this.snapshot> {
     this.tick();
     return this.snapshot();
   }
 
+  // Receive: component-wise max (merge causal histories) then tick
   receive(incoming: RawClock) {
     for (const [pid, time] of incoming) {
       this.clock.set(pid, Math.max(this.get(pid), time));
     }
 
-    this.tick(); // receive is also an event
+    this.tick(); // the receive itself is an event
   }
 
-  /**
-   * Checks if A happened before B. The comparison operators that detect causality
-   * Returns true if this clock happened-before other: every component <= other's, at least one strictly <
-   */
+  // Checks if A happened before B. The comparison operators that detect causality
+  // Returns true if this clock happened-before other: every component <= other's, at least one strictly <
   happenedBefore(otherClock: VectorClock): boolean {
     let atleastOneStrictlyLess = false;
 
@@ -69,9 +72,7 @@ export class VectorClock {
     return atleastOneStrictlyLess;
   }
 
-  /**
-   * Returns true if the clocks are identical (same causal history)
-   */
+  // Returns true if the clocks are identical (same causal history)
   equals(otherClock: VectorClock): boolean {
     const allProcesses = new Set([
       ...this.clock.keys(),
@@ -90,6 +91,7 @@ export class VectorClock {
     return true;
   }
 
+  // Returns true if these clocks represent concurrent (causally independent) events
   isConcurrentWith(otherClock: VectorClock): boolean {
     return (
       !this.happenedBefore(otherClock) &&
@@ -98,6 +100,7 @@ export class VectorClock {
     );
   }
 
+  // Merge two clocks — computes the least upper bound (join) of their causal histories
   static merge(
     a: VectorClock,
     b: VectorClock,
