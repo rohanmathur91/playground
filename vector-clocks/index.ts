@@ -19,8 +19,9 @@ export class VectorClock {
     return this.clock.get(processId) ?? 0;
   }
 
-  tick() {
+  tick(): VectorClock {
     this.clock.set(this.processId, this.get(this.processId) + 1);
+    return this;
   }
 
   snapshot() {
@@ -52,7 +53,7 @@ export class VectorClock {
       ...otherClock.clock.keys(),
     ]);
 
-    for (let pid in allProcesses) {
+    for (let pid of allProcesses) {
       const a = this.get(pid);
       const b = otherClock.get(pid);
 
@@ -77,7 +78,7 @@ export class VectorClock {
       ...otherClock.clock.keys(),
     ]);
 
-    for (let pid in allProcesses) {
+    for (let pid of allProcesses) {
       const a = this.get(pid);
       const b = otherClock.get(pid);
 
@@ -106,7 +107,7 @@ export class VectorClock {
 
     const mergedClock: RawClock = new Map();
 
-    for (let pid in allProcesses) {
+    for (let pid of allProcesses) {
       mergedClock.set(pid, Math.max(a.get(pid), b.get(pid)));
     }
 
